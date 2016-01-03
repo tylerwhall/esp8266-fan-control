@@ -1,28 +1,34 @@
 local m = mqtt.Client("livingroom", 10, "user", "password")
 local topic_prefix = "home/livingroom"
 
+local bedroom_fan = MqttFan_new {
+    topic = "home/bedroom/fan",
+    set_speed = function(speed)
+        bedroom_fan_set_speed(speed)
+    end
+}
+
+local bedroom_light = MqttLight_new {
+    topic = "home/livingroom/fancontroller/led",
+    set_brightness = function(brightness)
+        led_color(0, brightness, 0)
+    end
+}
+
+local led = MqttLight_new {
+    topic = "home/bedroom/fan/light",
+    set_brightness = function(brightness)
+        print("Fan set brightness", brightness)
+        bedroom_fan_set_brightness(brightness)
+    end
+}
+MqttFan_new = nil
+MqttLight_new = nil
+
 local mqtt_nodes = {
---[[
-    MqttLight:new {
-        topic = "home/livingroom/fancontroller/led",
-        set_brightness = function(brightness)
-            print("Led set brightness", brightness)
-            led_color(0, brightness, 0)
-        end
-    },
-    MqttLight:new {
-        topic = "home/bedroom/fan/light",
-        set_brightness = function(brightness)
-            print("Fan set brightness", brightness)
-            bedroom_fan_set_brightness(brightness)
-        end
-    },]]
-    MqttFan:new {
-        topic = "home/bedroom/fan",
-        set_speed = function(speed)
-            bedroom_fan_set_speed(speed)
-        end
-    },
+    bedroom_fan,
+    bedroom_light,
+    led,
 }
 
 local function dispatchMessage(con, topic, data)
@@ -78,6 +84,9 @@ tmr.alarm(0, 500, 1, function()
             m:publish(topic_prefix .. "/status", "online", 0, 0, nil)
             for k, v in pairs(mqtt_nodes) do
                 v:mqtt_subscribe(m)
+            end
+            for k, v in pairs(mqtt_nodes) do
+                v.mqtt_subscribe = nil
             end
             publishBrightness(m)
         end)

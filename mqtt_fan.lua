@@ -1,4 +1,4 @@
-MqttFan = { speed = FAN_OFF }
+local MqttFan = {}
 
 local function speed_map(speed)
     if speed == FAN_HIGH then return "High"
@@ -8,12 +8,19 @@ local function speed_map(speed)
     end
 end
 
-function MqttFan:new(o)
+local function MqttFan_mqtt_subscribe(self, m)
+    m:subscribe(self.command_topic, 0, nil)
+end
+
+function MqttFan_new(o)
+    local self = MqttFan
     o = o or {}
     setmetatable(o, self)
     self.__index = self
     o.speed_topic = o.topic .. "/speed"
     o.command_topic = o.topic .. "/command"
+    o.mqtt_subscribe = MqttFan_mqtt_subscribe
+    o.speed = FAN_OFF
     return o
 end
 
@@ -48,8 +55,4 @@ function MqttFan:mqtt_dispatch(m, topic, data)
         self:mqtt_command(m, data)
         return true
     end
-end
-
-function MqttFan:mqtt_subscribe(m)
-    m:subscribe(self.command_topic, 0, function(con) print("Subscribed") end)
 end

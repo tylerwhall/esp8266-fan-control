@@ -1,12 +1,20 @@
-MqttLight = { on = false, brightness = 100 }
+local MqttLight = {}
 
-function MqttLight:new(o)
+local function MqttLight_mqtt_subscribe(self, m)
+    m:subscribe(self.command_topic, 0, function(con) print("Subscribed", self.command_topic) end)
+end
+
+function MqttLight_new(o)
+    local self = MqttLight
     o = o or {}
     setmetatable(o, self)
     self.__index = self
     o.state_topic = o.topic .. "/state"
     o.brightness_topic = o.topic .. "/brightness"
     o.command_topic = o.topic .. "/command"
+    o.mqtt_subscribe = MqttLight_mqtt_subscribe
+    o.on = false
+    o.brightness = 100
     return o
 end
 
@@ -42,8 +50,4 @@ function MqttLight:mqtt_dispatch(m, topic, data)
         self:mqtt_command(m, data)
         return true
     end
-end
-
-function MqttLight:mqtt_subscribe(m)
-    m:subscribe(self.command_topic, 0, function(con) print("Subscribed", self.command_topic) end)
 end

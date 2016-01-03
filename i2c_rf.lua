@@ -124,6 +124,6 @@ if #arg == 0 then
     init()
 elseif arg[1] == "bedroom" then
     return _bedroom_fan_cmd(arg[2], arg[3])
-elseif arg[1] == "bedroom" then
+elseif arg[1] == "livingroom" then
     return _livingroom_fan_cmd(arg[2])
 end
