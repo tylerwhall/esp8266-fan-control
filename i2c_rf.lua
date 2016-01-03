@@ -64,20 +64,18 @@ local fan_cmd12 = function(addr, count, cmd)
     cmd = bit.band(cmd, 0x3f)
     local data0 = bit.bor(bit.lshift(1, 7), bit.lshift(addr, 3), bit.rshift(cmd, 4))
     local data1 = bit.band(cmd, 0xf)
-    print(string.format("12bit 0x%x 0x%x", data0, data1))
-    i2c_tx(0, count, data0, data1)
+    --print(string.format("12bit 0x%x 0x%x", data0, data1))
+    return i2c_tx(0, count, data0, data1)
 end
 
 -- light is a float intensity between 0 and 1
 local fan_cmd21 = function(addr, count, light, fan)
     local addr = addr_reverse(bit.band(addr, 0xf))
-    print(light, FAN21_INTENSITY_MAX)
     if not light then
         light = FAN21_LIGHT_OFF
     else
         light = math.floor(light * FAN21_INTENSITY_MAX)
     end
-    print(light, bit.lshift(light, 0), bit.lshift(light, 2))
     -- Command is 8 bits
     local cmd = bit.bor(
             bit.lshift(light, 2),
@@ -90,13 +88,13 @@ local fan_cmd21 = function(addr, count, light, fan)
             1)
     -- Data 1 is command
     local data1 = cmd
-    print(string.format("21bit 0x%x 0x%x", data0, data1))
-    i2c_tx(1, count, data0, data1)
+    --print(string.format("21bit 0x%x 0x%x", data0, data1))
+    return i2c_tx(1, count, data0, data1)
 end
 
 
 function livingroom_fan_cmd(cmd)
-    fan_cmd12(LIVINGROOM_FAN_ADDR, 20, cmd)
+    return fan_cmd12(LIVINGROOM_FAN_ADDR, 20, cmd)
 end
 
 function bedroom_fan_cmd(intensity, fan)
@@ -109,19 +107,7 @@ function bedroom_fan_cmd(intensity, fan)
     else
         fan = FAN21_FANOFF
     end
-    fan_cmd21(BEDROOM_FAN_ADDR, 60, intensity, fan)
-end
-
-local function fan_cmd2()
-    bedroom_fan_cmd(.5, FAN_LOW)
-    tmr.alarm(1, 2500, 0, function() fan_cmd() end)
-end
-
-fan_cmd = function()
-    livingroom_fan_cmd(FAN12_LIGHT)
-    tmr.alarm(1, 2500, 0, fan_cmd2)
+    return fan_cmd21(BEDROOM_FAN_ADDR, 60, intensity, fan)
 end
 
 i2c.setup(bus, gpio_sda, gpio_scl, i2c.SLOW)
-
-fan_cmd()
