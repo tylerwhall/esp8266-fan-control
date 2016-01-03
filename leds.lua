@@ -2,10 +2,6 @@ local gpio_r = 8 --15
 local gpio_g = 6 --12
 local gpio_b = 7 --13
 
-led_r = 0
-led_g = 0
-led_b = 0
-
 local function init()
     pwm.setup(gpio_r, 100, 0)
     pwm.setup(gpio_g, 100, 0)
@@ -15,17 +11,17 @@ local function init()
     pwm.start(gpio_b)
 end
 
-local function led_update()
+local function led_update(led_r, led_g, led_b)
     pwm.setduty(gpio_r, 1023*led_r)
     pwm.setduty(gpio_g, 1023*led_g)
     pwm.setduty(gpio_b, 1023*led_b)
 end
 
 local function _led_color(r, g, b)
-    led_r = r
-    led_g = g*.1
-    led_b = b*.1
-    led_update()
+    local led_r = r
+    local led_g = g*.1
+    local led_b = b*.1
+    led_update(led_r, led_g, led_b)
 end
 
 local arg={...}

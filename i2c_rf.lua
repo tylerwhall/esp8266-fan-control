@@ -92,10 +92,22 @@ end
 
 
 local function _livingroom_fan_cmd(cmd)
+    print("Livingroom fan cmd", cmd)
+    if cmd == FAN_HIGH then
+        cmd = FAN12_FANHIGH
+    elseif cmd == FAN_MED then
+        cmd = FAN12_FANMED
+    elseif cmd == FAN_LOW then
+        cmd = FAN12_FANLOW
+    elseif cmd == FAN_OFF then
+        cmd = FAN12_FANOFF
+    else
+        cmd = FAN12_LIGHT
+    end
     return fan_cmd12(LIVINGROOM_FAN_ADDR, 20, cmd)
 end
 
-function livingroom_fan_cmd(intensity, fan)
+function livingroom_fan_cmd(cmd)
     return assert(loadfile("i2c_rf.lua"))("livingroom", cmd)
 end
 

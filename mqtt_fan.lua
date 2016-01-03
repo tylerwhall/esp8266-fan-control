@@ -21,6 +21,7 @@ function MqttFan_new(o)
     o.command_topic = o.topic .. "/command"
     o.mqtt_subscribe = MqttFan_mqtt_subscribe
     o.speed = FAN_OFF
+    o.topic = nil
     return o
 end
 
@@ -29,7 +30,7 @@ function MqttFan:publish(m)
 end
 
 function MqttFan:mqtt_command(m, data)
-    print(self.topic, "command", data)
+    --print(self.topic, "command", data)
     if not type(data) == "string" then
         return
     end

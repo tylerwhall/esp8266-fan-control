@@ -3,9 +3,7 @@ local topic_prefix = "home/livingroom"
 
 local bedroom_fan = MqttFan_new {
     topic = "home/bedroom/fan",
-    set_speed = function(speed)
-        bedroom_fan_set_speed(speed)
-    end
+    set_speed = bedroom_fan_set_speed
 }
 
 local bedroom_light = MqttLight_new {
@@ -22,6 +20,22 @@ local led = MqttLight_new {
         bedroom_fan_set_brightness(brightness)
     end
 }
+
+local livingroom_fan = MqttFan_new {
+    topic = "home/livingroom/fan",
+    set_speed = livingroom_fan_set_speed
+}
+
+local livingroom_light = MqttLight_new {
+    topic = "home/livingroom/fan/light",
+    set_brightness = function(brightness)
+        print("Livingroom fan set brightness (toggle)", brightness)
+        livingroom_fan_light_toggle()
+    end,
+    -- No status updates - only toggle capability
+    publish = function() end
+}
+
 MqttFan_new = nil
 MqttLight_new = nil
 
@@ -29,6 +43,8 @@ local mqtt_nodes = {
     bedroom_fan,
     bedroom_light,
     led,
+    livingroom_fan,
+    livingroom_light,
 }
 
 local function dispatchMessage(con, topic, data)
@@ -48,29 +64,6 @@ m:on("offline", function(con) print("mqtt offline") end)
 m:on("message", dispatchMessage)
 m:lwt(topic_prefix .. "/status", "offline", 0, 0)
 
-function getBrightness()
-    return adc.read(0) / 1024 * 100
-end
-
-local lastBrightness = 0
-local scheduleBrightness
-local publishBrightness = function(m)
-    brightness = getBrightness()
-    if math.abs(lastBrightness - brightness) > 1 then
-        --print("Sending brightness update ", brightness)
-        lastBrightness = brightness
-        m:publish(topic_prefix .. "/brightness", brightness, 0, 0, function(conn)
-            scheduleBrightness(m)
-        end)
-    else
-        --print("Brightness", brightness, "similar to", lastBrightness, "No update")
-        scheduleBrightness(m)
-    end
-end
-
-scheduleBrightness = function(m)
-    tmr.alarm(0, 500, 0, function() publishBrightness(m) end) 
-end
 
 -- Wait for wifi connection
 led_color(1, 0, 0)
@@ -88,7 +81,7 @@ tmr.alarm(0, 500, 1, function()
             for k, v in pairs(mqtt_nodes) do
                 v.mqtt_subscribe = nil
             end
-            publishBrightness(m)
+            --publishBrightness(m)
         end)
     else
         print("Waiting for WIFI")

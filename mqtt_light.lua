@@ -9,8 +9,6 @@ function MqttLight_new(o)
     o = o or {}
     setmetatable(o, self)
     self.__index = self
-    o.state_topic = o.topic .. "/state"
-    o.brightness_topic = o.topic .. "/brightness"
     o.command_topic = o.topic .. "/command"
     o.mqtt_subscribe = MqttLight_mqtt_subscribe
     o.on = false
@@ -19,12 +17,12 @@ function MqttLight_new(o)
 end
 
 function MqttLight:publish(m)
-    m:publish(self.state_topic, self.on and "ON" or "OFF", 0, 0, nil)
-    m:publish(self.brightness_topic, self.brightness, 0, 0, nil)
+    m:publish(self.topic .. "/state", self.on and "ON" or "OFF", 0, 0, nil)
+    m:publish(self.topic .. "/brightness", self.brightness, 0, 0, nil)
 end
 
 function MqttLight:mqtt_command(m, data)
-    print(self.topic, "command", data)
+    --print(self.topic, "command", data)
     data = data:upper()
     if data == "ON" then
         self.on = true
