@@ -8,7 +8,7 @@ local i2c_tries = 0
 
 local function fan_update_try()
     if lvgroom_fan_needs_toggle then
-        if livingroom_fan_cmd(nil) then
+        if livingroom_fan_cmd(FAN_LIGHT) then
             lvgroom_fan_needs_toggle = false
         else
             return false
