@@ -1,5 +1,4 @@
-local m = mqtt.Client("livingroom", 10, "user", "password")
-local topic_prefix = "home/livingroom"
+m = mqtt.Client("livingroom", 10, "user", "password")
 
 local bedroom_fan = MqttFan_new {
     topic = "home/bedroom/fan",
@@ -58,30 +57,31 @@ local function dispatchMessage(con, topic, data)
         end
     end
 end
-
+local status_topic = "home/livingroom/status"
 m:on("connect", function(con) print("mqtt connected") end)
-m:on("offline", function(con) print("mqtt offline") end)
+m:on("offline", function(con) print("mqtt offline") node.restart() end)
 m:on("message", dispatchMessage)
-m:lwt(topic_prefix .. "/status", "offline", 0, 0)
-
+m:lwt(status_topic, "offline", 0, 0)
 
 -- Wait for wifi connection
 led_color(1, 0, 0)
 tmr.alarm(0, 500, 1, function()
     if wifi.sta.getip() ~= nil then
         print("WIFI connected")
-        led_color(0, 0, 0)
-        tmr.stop(0)
-        m:connect("192.168.1.21", 1883, 0, function(con)
+        led_color(1, 0, 1)
+        tmr.alarm(0, 30000, 0, function() print("MQTT Connection timeout") node.restart() end)
+        m:connect("bourbon", 1883, 0, function(con)
+            tmr.stop(0)
+            led_color(0, 0, 0)
             print("connected")
-            m:publish(topic_prefix .. "/status", "online", 0, 0, nil)
+            m:publish(status_topic, "online", 0, 0, nil)
             for k, v in pairs(mqtt_nodes) do
                 v:mqtt_subscribe(m)
             end
             for k, v in pairs(mqtt_nodes) do
                 v.mqtt_subscribe = nil
             end
-            --publishBrightness(m)
+            publishBrightness(nil)
         end)
     else
         print("Waiting for WIFI")
