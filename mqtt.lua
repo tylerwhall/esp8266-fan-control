@@ -1,48 +1,39 @@
-m = mqtt.Client("livingroom", 10, "user", "password")
-topic_prefix = "home/livingroom"
-light_topic = "home/bedroom/fan/light/"
-light_brightness = light_topic .. "brightness"
-light_state = light_topic .. "state"
-light_command = light_topic .. "command"
+local m = mqtt.Client("livingroom", 10, "user", "password")
+local topic_prefix = "home/livingroom"
 
---Light control
-
-local lightOn = false
-local lightBrightness = 100
-
-function lightPublish(m)
-    m:publish(light_state, lightOn and "ON" or "OFF", 0, 0, nil)
-    m:publish(light_brightness, lightBrightness, 0, 0, nil)
-end
-
-function lightCommand(data)
-    print("Light command", data)
-    if data == "ON" then
-        lightOn = true
-    elseif data == "OFF" then
-        lightOn = false
-    else
-        ok, data = pcall(tonumber, data)
-        if data == nil then
-            return
+local mqtt_nodes = {
+--[[
+    MqttLight:new {
+        topic = "home/livingroom/fancontroller/led",
+        set_brightness = function(brightness)
+            print("Led set brightness", brightness)
+            led_color(0, brightness, 0)
         end
-        if data <= 0 and data >= 100 then
-            data = 0
+    },
+    MqttLight:new {
+        topic = "home/bedroom/fan/light",
+        set_brightness = function(brightness)
+            print("Fan set brightness", brightness)
+            bedroom_fan_set_brightness(brightness)
         end
-        lightBrightness = data
-    end
+    },]]
+    MqttFan:new {
+        topic = "home/bedroom/fan",
+        set_speed = function(speed)
+            bedroom_fan_set_speed(speed)
+        end
+    },
+}
 
-    lightPublish(m)
-    led_color(0, lightOn and lightBrightness / 100 / 3 or 0, 0)
-end
-
-function dispatchMessage(con, topic, data)
+local function dispatchMessage(con, topic, data)
     print("Message", topic, data)
     if topic == nil or data == nil then
         return
     end
-    if topic == light_command then
-        lightCommand(data)
+    for k, v in pairs(mqtt_nodes) do
+        if v:mqtt_dispatch(m, topic, data) then
+            return
+        end
     end
 end
 
@@ -85,7 +76,9 @@ tmr.alarm(0, 500, 1, function()
         m:connect("192.168.1.21", 1883, 0, function(con)
             print("connected")
             m:publish(topic_prefix .. "/status", "online", 0, 0, nil)
-            m:subscribe(light_command, 0, function(con) print("Subscribed", light_command) end)
+            for k, v in pairs(mqtt_nodes) do
+                v:mqtt_subscribe(m)
+            end
             publishBrightness(m)
         end)
     else

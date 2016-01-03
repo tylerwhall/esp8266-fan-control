@@ -1,9 +1,5 @@
-gpio_scl = 3 --0
-gpio_sda = 4 --2
-
---gpio.mode(gpio_scl, gpio.INPUT)
---gpio.mode(gpio_sda, gpio.INPUT)
---gpio.write(gpio_scl, gpio.LOW)
+local gpio_scl = 3 --0
+local gpio_sda = 4 --2
 
 local bus = 0
 local address = 0x46
@@ -93,11 +89,16 @@ local fan_cmd21 = function(addr, count, light, fan)
 end
 
 
-function livingroom_fan_cmd(cmd)
+local function _livingroom_fan_cmd(cmd)
     return fan_cmd12(LIVINGROOM_FAN_ADDR, 20, cmd)
 end
 
-function bedroom_fan_cmd(intensity, fan)
+function livingroom_fan_cmd(intensity, fan)
+    return assert(loadfile("i2c_rf.lua"))("livingroom", cmd)
+end
+
+local function _bedroom_fan_cmd(intensity, fan)
+    print("Bedroom fan cmd", intensity, fan)
     if fan == FAN_HIGH then
         fan = FAN21_FANHIGH
     elseif fan == FAN_MED then
@@ -110,4 +111,19 @@ function bedroom_fan_cmd(intensity, fan)
     return fan_cmd21(BEDROOM_FAN_ADDR, 60, intensity, fan)
 end
 
-i2c.setup(bus, gpio_sda, gpio_scl, i2c.SLOW)
+function bedroom_fan_cmd(intensity, fan)
+    return assert(loadfile("i2c_rf.lua"))("bedroom", intensity, fan)
+end
+
+local function init()
+    i2c.setup(bus, gpio_sda, gpio_scl, i2c.SLOW)
+end
+
+local arg={...}
+if #arg == 0 then
+    init()
+elseif arg[1] == "bedroom" then
+    return _bedroom_fan_cmd(arg[2], arg[3])
+elseif arg[1] == "bedroom" then
+    return _livingroom_fan_cmd(arg[2])
+end

@@ -21,10 +21,18 @@ local function fan_update()
     end
 end
 
-function bedroom_fan_set(intensity, speed)
-    bedroom_fan_intensity = intensity
-    bedroom_fan_speed = speed
+function bedroom_fan_change()
     bedroom_fan_needs_update = true
     i2c_tries = 0
     fan_update()
+end
+
+function bedroom_fan_set_brightness(brightness)
+    bedroom_fan_intensity = brightness
+    bedroom_fan_change()
+end
+
+function bedroom_fan_set_speed(speed)
+    bedroom_fan_speed = speed
+    bedroom_fan_change()
 end
