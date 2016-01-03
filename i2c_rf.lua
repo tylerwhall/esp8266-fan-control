@@ -17,6 +17,7 @@ local FAN21_FANMED    = 0x1
 local FAN21_FANLOW    = 0x0
 local FAN21_FANOFF    = 0x3
 local FAN21_INTENSITY_MAX = 0x3e
+local FAN21_INTENSITY_MIN = FAN21_INTENSITY_MAX * 0.3
 local FAN21_LIGHT_OFF     = 0x3f
 
 FAN_OFF     = 0
@@ -67,10 +68,11 @@ end
 -- light is a float intensity between 0 and 1
 local fan_cmd21 = function(addr, count, light, fan)
     local addr = addr_reverse(bit.band(addr, 0xf))
-    if not light then
+    if light == 0 then
         light = FAN21_LIGHT_OFF
     else
-        light = math.floor(light * FAN21_INTENSITY_MAX)
+        -- Fan seems to reject commands with intensity less than slightly under 30%
+        light = math.floor(light * (FAN21_INTENSITY_MAX - FAN21_INTENSITY_MIN)) + FAN21_INTENSITY_MIN
     end
     -- Command is 8 bits
     local cmd = bit.bor(
@@ -108,7 +110,7 @@ local function _bedroom_fan_cmd(intensity, fan)
     else
         fan = FAN21_FANOFF
     end
-    return fan_cmd21(BEDROOM_FAN_ADDR, 60, intensity, fan)
+    return fan_cmd21(BEDROOM_FAN_ADDR, 30, intensity, fan)
 end
 
 function bedroom_fan_cmd(intensity, fan)
